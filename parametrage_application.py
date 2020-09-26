@@ -8,6 +8,7 @@ Created on Sat Sep 26 15:24:56 2020.
 
 @Objet : paramètres généraux de l'application.
 
+A modifier si changement de répertoires
 """
 
 repertoire_travail = \
