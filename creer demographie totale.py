@@ -17,34 +17,16 @@ import re
 import xlrd
 import numpy as np
 
-
-def tracage(message_l):
-    """
-    Ecrit les messages à la fois sur le fichier de sortie et dans la console.
-
-    Parameters
-    ----------
-    message_l : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
-    """
-    message_l = "%s : %s\n" % (datetime.datetime.now(), message_l)
-    print(message_l)
-    fichier_traces.write(message_l)
-    fichier_traces.flush()
+from outils_communs import tracage
+from parametrage_application import repertoire_travail, repertoire_demographie
 
 
 def accroissement_pop(departement_l, table_acompleter, an_deb_l, an_fin_l,
                       taux, derniere=False):
     """
     Met à jour la table de démographie sur la periode an_deb_l +1 an_fin_l -1.
-
-    avec le taux d'accoissement donné.
-    Si on est à la dernière période on va jusqu'à an_fin_l.
+    avec le taux d'accoissement donné
+    Si on est à la dernière période on va jusqu'à an_fin_l
 
     Parameters
     ----------
@@ -67,7 +49,6 @@ def accroissement_pop(departement_l, table_acompleter, an_deb_l, an_fin_l,
         DESCRIPTION.
 
     """
-
     if derniere:
         an_fin_l = an_fin_l + 1
     pop_encours = pop_debut
@@ -84,27 +65,31 @@ def accroissement_pop(departement_l, table_acompleter, an_deb_l, an_fin_l,
                 pop_encours + taux_mensuel
             pop_encours += taux_mensuel
     return table_acompleter
+
+
 #
 # Programme principal
 #
 #
 
 
-repertoire_donnees = r'D:\donnees_manu\Documents\insee\divers'
-repertoire_cible = os.path.join(repertoire_donnees, "resultats")
-fichier_traces = codecs.open('cr extraction démographie.txt', 'w', 'UTF-8')
-fichier_donnees = os.path.join(repertoire_donnees,
+fichier_traces = \
+    codecs.open(os.path.join(repertoire_travail, 'logs',
+                             'cr extraction démographie.txt'),
+                'w', 'UTF-8')
+
+fichier_donnees = os.path.join(repertoire_demographie,
                                'Fichier_poplegale_6817.xls')
 table_demographie = {}
 table_demographie['FR'] = {}
 
 debut = datetime.datetime.now()
 date_jour = debut.strftime("%Y_%m_%d")
-tracage(u"Début d'extraction des données démographiques")
+tracage(u"Début d'extraction des données démographiques", fichier_traces)
 try:
 
     fichier_xls = xlrd.open_workbook(fichier_donnees)
-    tracage("fin lecture fichier excel")
+    tracage("fin lecture fichier excel", fichier_traces)
     liste_nom_feuilles = fichier_xls.sheet_names()
     for i in np.arange(len(liste_nom_feuilles)):
         print(liste_nom_feuilles[i])
@@ -151,7 +136,7 @@ try:
     for departement in table_demographie:
         if departement.find("20") != -1:
             continue
-        tracage("Traitement du département : %s" % departement)
+        tracage("Traitement du département : %s" % departement, fichier_traces)
         annees = [x for x in table_demographie[departement].keys()]
         annees.sort()
         j = 0
@@ -180,7 +165,7 @@ try:
                 annee_debut = annees[j]
                 annee_fin = annees[j+1]
         # creer fichier deépartement
-        fichier_resultat = open(os.path.join(repertoire_cible,
+        fichier_resultat = open(os.path.join(repertoire_demographie,
                                              "demographie_dep_%s.csv"
                                              % departement),
                                 'w')
@@ -188,17 +173,19 @@ try:
         annees.sort()
         for an in annees:
             for mois in range(1, 13):
-                fichier_resultat.write("%s\t%s\t%s\n"
-                                       % (an, mois,
-                                          table_demographie_complete[departement][an][mois]))
+                ligne = \
+                    "%s\t%s\t%s\n" % \
+                    (an, mois,
+                     table_demographie_complete[departement][an][mois])
+                fichier_resultat.write(ligne)
 
         fichier_resultat.close()
 
 except BaseException as erreur:
-    # print('feuille %s row %s' % (feuille, row))
-    tracage(traceback.print_exc())
-    tracage("erreur : %s" % erreur)
+    tracage(traceback.print_exc(), fichier_traces)
+    tracage("erreur : %s" % erreur, fichier_traces)
 
 finally:
-    tracage("Temps d'exécution : %s " % (datetime.datetime.now() - debut))
+    tracage("Temps d'exécution : %s " %
+            (datetime.datetime.now() - debut), fichier_traces)
     fichier_traces.close()
